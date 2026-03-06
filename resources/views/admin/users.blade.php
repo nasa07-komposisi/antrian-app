@@ -3,6 +3,24 @@
 @section('title', 'Manajemen User')
 
 @section('content')
+    @if(session('success'))
+        <div class="alert alert-success border-0 shadow-sm mb-3">
+            {{ session('success') }}
+        </div>
+    @endif
+
+    @if(session('warning'))
+        <div class="alert alert-warning border-0 shadow-sm mb-3">
+            {{ session('warning') }}
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger border-0 shadow-sm mb-3">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <div class="row">
         <div class="col-md-4">
             <div class="card shadow-sm mb-4">
@@ -33,10 +51,34 @@
                     </form>
                 </div>
             </div>
+
+            <!-- Impor User Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">Impor User (CSV)</div>
+                <div class="card-body">
+                    <p class="small text-muted mb-3">Gunakan fitur ini untuk menambah banyak petugas sekaligus.</p>
+
+                    <a href="{{ route('admin.users.template') }}" class="btn btn-outline-secondary btn-sm mb-3 w-100">
+                        <i class="bi bi-download me-1"></i> Unduh Template CSV
+                    </a>
+
+                    <form action="{{ route('admin.users.import') }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="mb-3">
+                            <label class="form-label small fw-bold">Pilih File CSV</label>
+                            <input type="file" name="file" class="form-control form-control-sm" accept=".csv" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm w-100">
+                            <i class="bi bi-upload me-1"></i> Impor File
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
         <div class="col-md-8">
             <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white">Daftar User</div>
+                <div class="card-header bg-dark text-white" style="border-bottom: 2px solid var(--gold-accent);">Daftar User
+                </div>
                 <div class="card-body p-0">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">

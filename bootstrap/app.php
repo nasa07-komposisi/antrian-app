@@ -15,11 +15,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\IsAdmin::class,
         ]);
 
-        $middleware->redirectGuestsTo(
-            fn($request) => $request->is('admin/*') || $request->is('admin')
-            ? route('admin.login')
-            : route('login')
-        );
+        $middleware->append(\App\Http\Middleware\HandleInactivity::class);
+
+        $middleware->redirectGuestsTo(fn() => route('login'));
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

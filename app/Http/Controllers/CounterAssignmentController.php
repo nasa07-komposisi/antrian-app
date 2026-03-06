@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Auth;
 
 class CounterAssignmentController extends Controller
 {
+    use \App\Traits\HasConfigVersion;
+
     public function index()
     {
         $user = Auth::user();
@@ -43,8 +45,18 @@ class CounterAssignmentController extends Controller
 
         $counter->update([
             'occupied_by' => Auth::id(),
-            'status' => 'busy'
+            'status' => 'busy',
+            'last_seen_at' => now()
         ]);
+
+        // Create log entry
+        \App\Models\CounterLog::create([
+            'user_id' => Auth::id(),
+            'counter_id' => $counter->id,
+            'login_at' => now()
+        ]);
+
+        $this->updateConfigVersion();
 
         return redirect()->route('counter.index')->with('success', 'Loket berhasil dipilih.');
     }

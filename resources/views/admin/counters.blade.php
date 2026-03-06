@@ -37,7 +37,8 @@
         </div>
         <div class="col-md-8">
             <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white">Daftar Loket</div>
+                <div class="card-header bg-dark text-white" style="border-bottom: 2px solid var(--gold-accent);">Daftar
+                    Loket</div>
                 <div class="card-body p-0">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">

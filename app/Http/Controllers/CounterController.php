@@ -40,6 +40,11 @@ class CounterController extends Controller
             return back()->with('error', 'Loket tidak terdeteksi.');
         }
 
+        // Check global call lock
+        if (\Illuminate\Support\Facades\Cache::has('queue_call_lock')) {
+            return back()->with('error', 'Mohon tunggu, panggilan suara sedang berlangsung di loket lain.');
+        }
+
         // Check if there is already a calling queue
         $existing = Queue::where('counter_id', $counter->id)
             ->where('status', 'calling')
@@ -56,11 +61,18 @@ class CounterController extends Controller
             ->first();
 
         if ($next) {
+            // Set global lock (7 seconds timeout)
+            \Illuminate\Support\Facades\Cache::put('queue_call_lock', true, 7);
+
             $next->update([
                 'counter_id' => $counter->id,
+                'user_id' => Auth::id(),
                 'status' => 'calling',
                 'called_at' => now()
             ]);
+
+            $this->updateConfigVersion();
+
             return back()->with('success', "Memanggil nomor: " . $next->queue_number);
         }
 
@@ -71,8 +83,11 @@ class CounterController extends Controller
     {
         $queue->update([
             'status' => 'finished',
-            'finished_at' => now()
+            'finished_at' => now(),
+            'user_id' => Auth::id()
         ]);
+
+        $this->updateConfigVersion();
 
         return back()->with('success', 'Antrian selesai.');
     }
@@ -80,17 +95,30 @@ class CounterController extends Controller
     public function skip(Queue $queue)
     {
         $queue->update([
-            'status' => 'skipped'
+            'status' => 'skipped',
+            'user_id' => Auth::id()
         ]);
+
+        $this->updateConfigVersion();
 
         return back()->with('success', 'Antrian dilewati.');
     }
 
     public function recall(Queue $queue)
     {
+        // Check global call lock
+        if (\Illuminate\Support\Facades\Cache::has('queue_call_lock')) {
+            return back()->with('error', 'Mohon tunggu, panggilan suara sedang berlangsung di loket lain.');
+        }
+
+        // Set global lock (7 seconds timeout)
+        \Illuminate\Support\Facades\Cache::put('queue_call_lock', true, 7);
+
         $queue->update([
             'called_at' => now()
         ]);
+
+        $this->updateConfigVersion();
 
         return back()->with('success', "Memanggil kembali nomor: " . $queue->queue_number);
     }
@@ -100,7 +128,8 @@ class CounterController extends Controller
         // 1. Finish the current queue
         $queue->update([
             'status' => 'finished',
-            'finished_at' => now()
+            'finished_at' => now(),
+            'user_id' => Auth::id()
         ]);
 
         // 2. Call the next one
@@ -127,5 +156,17 @@ class CounterController extends Controller
         $this->updateConfigVersion();
 
         return back()->with('success', 'Layanan loket berhasil diubah.');
+    }
+
+    public function heartbeat()
+    {
+        $user = Auth::user();
+        if ($user && $user->occupiedCounter) {
+            $user->occupiedCounter->update([
+                'last_seen_at' => now(),
+                'status' => 'busy' // Ensure status is busy if active
+            ]);
+        }
+        return response()->json(['status' => 'ok']);
     }
 }

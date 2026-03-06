@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 
 class AuthController extends Controller
 {
+    use \App\Traits\HasConfigVersion;
+
     public function showLoginForm()
     {
         if (Auth::check()) {
@@ -77,19 +79,35 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $user = Auth::user();
+        $role = $user ? $user->role : null;
 
         // Unlock counter if user is at a counter
         if ($user && $user->occupiedCounter && $user->occupiedCounter->occupied_by == $user->id) {
+            // Update counter log with logout time
+            \App\Models\CounterLog::where('user_id', $user->id)
+                ->where('counter_id', $user->occupiedCounter->id)
+                ->whereNull('logout_at')
+                ->latest()
+                ->first()
+                    ?->update(['logout_at' => now()]);
+
             $user->occupiedCounter->update([
                 'occupied_by' => null,
-                'status' => 'active'
+                'status' => 'offline',
+                'last_seen_at' => null
             ]);
         }
+
+        $this->updateConfigVersion();
 
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        if ($role === 'admin') {
+            return redirect()->route('admin.login');
+        }
+
+        return redirect()->route('login');
     }
 }

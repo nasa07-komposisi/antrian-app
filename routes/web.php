@@ -36,15 +36,20 @@ Route::middleware('auth')->group(function () {
         Route::post('/next/{queue}', [CounterController::class, 'next'])->name('counter.next');
         Route::post('/update-service', [CounterController::class, 'updateService'])->name('counter.update-service');
         Route::post('/register-queue/{service}', [PublicController::class, 'registerQueue'])->name('queue.register');
+        Route::post('/unlock-call', [PublicController::class, 'unlockCall'])->name('counter.unlock-call');
+        Route::post('/heartbeat', [CounterController::class, 'heartbeat'])->name('counter.heartbeat');
     });
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/', [AdminController::class, 'index'])->name('admin.index');
+    Route::get('/performance', [AdminController::class, 'performance'])->name('admin.performance');
 
     // User Management
     Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
     Route::post('/users', [AdminController::class, 'storeUser'])->name('admin.users.store');
+    Route::get('/users/template', [AdminController::class, 'downloadUserTemplate'])->name('admin.users.template');
+    Route::post('/users/import', [AdminController::class, 'importUsers'])->name('admin.users.import');
     Route::put('/users/{user}', [AdminController::class, 'updateUser'])->name('admin.users.update');
     Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
 
@@ -64,4 +69,16 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::post('/quotas/reset', [AdminController::class, 'resetQuota'])->name('admin.quotas.reset');
 
     Route::delete('/counters/{counter}', [AdminController::class, 'deleteCounter'])->name('admin.counters.delete');
+
+    // Admin Logging & Control
+    Route::get('/logs', [AdminController::class, 'logs'])->name('admin.logs');
+    Route::get('/realtime-data', [AdminController::class, 'getRealtimeData'])->name('admin.realtime');
+
+    // Announcement Management
+    Route::get('/announcements', [AdminController::class, 'announcements'])->name('admin.announcements');
+    Route::post('/announcements', [AdminController::class, 'storeAnnouncement'])->name('admin.announcements.store');
+    Route::put('/announcements/{announcement}', [AdminController::class, 'updateAnnouncement'])->name('admin.announcements.update');
+    Route::delete('/announcements/{announcement}', [AdminController::class, 'deleteAnnouncement'])->name('admin.announcements.delete');
+
+    Route::post('/queues/{queue}/force-finish', [AdminController::class, 'forceFinish'])->name('admin.queues.force-finish');
 });

@@ -19,11 +19,17 @@ class Queue extends Model
     protected $fillable = [
         'service_id',
         'counter_id',
+        'user_id',
         'queue_number',
         'number',
         'status',
         'called_at',
         'finished_at'
+    ];
+
+    protected $casts = [
+        'called_at' => 'datetime',
+        'finished_at' => 'datetime',
     ];
 
     public function service()
@@ -34,5 +40,10 @@ class Queue extends Model
     public function counter()
     {
         return $this->belongsTo(Counter::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }

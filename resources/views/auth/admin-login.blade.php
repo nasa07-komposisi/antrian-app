@@ -39,8 +39,9 @@
                                 <input type="password" name="password" class="form-control" placeholder="••••••••" required>
                             </div>
                         </div>
-                        <button type="submit" class="btn btn-dark btn-lg w-100 py-3 shadow">
-                            <i class="bi bi-box-arrow-in-right me-2"></i> <strong>LOGIN</strong>
+                        <button type="submit" class="btn btn-dark btn-lg w-100 py-3 shadow fw-bold"
+                            style="border: 2px solid var(--gold-accent);">
+                            <i class="bi bi-shield-lock-fill me-2"></i> LOGIN ADMIN
                         </button>
                     </form>
 

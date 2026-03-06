@@ -5,10 +5,13 @@ namespace App\Http\Controllers;
 use App\Models\Service;
 use App\Models\Queue;
 use App\Models\Counter;
+use App\Models\Announcement;
 use Illuminate\Http\Request;
 
 class PublicController extends Controller
 {
+    use \App\Traits\HasConfigVersion;
+
     public function index()
     {
         $counters = Counter::with([
@@ -42,6 +45,11 @@ class PublicController extends Controller
 
             $current = $counter->queues->first();
 
+            // Determine effective status based on heartbeat
+            $isOnline = $counter->status === 'busy' &&
+                $counter->last_seen_at &&
+                $counter->last_seen_at->diffInSeconds(now()) < 40;
+
             return [
                 'counter_name' => $counter->name,
                 'service_name' => $counter->service?->name ?? '-',
@@ -50,7 +58,7 @@ class PublicController extends Controller
                 'current_number' => $current?->number ?? 0,
                 'queue_id' => $current?->id ?? null,
                 'called_at' => $current?->called_at ?? null,
-                'status' => $counter->status,
+                'status' => $isOnline ? 'busy' : 'active',
                 'waiting_count' => $waitingCount,
                 'finished_today' => $finishedToday
             ];
@@ -71,6 +79,7 @@ class PublicController extends Controller
         return response()->json([
             'counters' => $data,
             'summary' => $servicesSummary,
+            'announcements' => Announcement::where('is_active', true)->pluck('content'),
             'config_version' => \Illuminate\Support\Facades\Storage::disk('local')->get('config_version.txt') ?? 0
         ]);
     }
@@ -106,7 +115,22 @@ class PublicController extends Controller
             'status' => 'waiting'
         ]);
 
-        return back()->with('success', "Nomor Antrian Baru: $queueNumber")->with('print_queue_id', $queue->id);
+        $this->updateConfigVersion();
+
+        // Attempt Raw ESC/POS Print if PRINTER_PATH is set
+        // Attempt Raw ESC/POS Print if PRINTER_PATH is set (Server-side silent print)
+        if (env('PRINTER_PATH')) {
+            $printService = new \App\Services\PrintService();
+            $printService->printTicket($queue);
+        }
+
+        // Only flash print session if PRINTER_PATH is NOT set (to allow browser print fallback)
+        $response = back()->with('success', "Nomor Antrian Baru: $queueNumber");
+        if (!env('PRINTER_PATH')) {
+            $response->with('print_queue_id', $queue->id);
+        }
+
+        return $response;
     }
 
     public function printTicket(Queue $queue)
@@ -118,5 +142,11 @@ class PublicController extends Controller
     {
         $version = \Illuminate\Support\Facades\Storage::disk('local')->get('config_version.txt') ?? 0;
         return response()->json(['config_version' => $version]);
+    }
+
+    public function unlockCall()
+    {
+        \Illuminate\Support\Facades\Cache::forget('queue_call_lock');
+        return response()->json(['status' => 'success']);
     }
 }

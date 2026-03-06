@@ -6,7 +6,8 @@
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center">
+                <div class="card-header bg-dark text-white py-3 d-flex justify-content-between align-items-center"
+                    style="border-bottom: 2px solid var(--gold-accent);">
                     <h5 class="mb-0 text-uppercase fw-bold letter-spacing-1">
                         <i class="bi bi-shield-check me-2 text-warning"></i> Pengaturan Kuota Antrian
                     </h5>

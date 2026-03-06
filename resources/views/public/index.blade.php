@@ -111,7 +111,8 @@
             <div class="card border-0 shadow-sm overflow-hidden">
                 <div class="card-header bg-dark text-white py-3">
                     <h5 class="mb-0 text-center text-uppercase fw-bold letter-spacing-1">
-                        <i class="bi bi-graph-up-arrow me-2 text-warning"></i> Statistik Pelayanan Hari Ini
+                        <i class="bi bi-graph-up-arrow me-2" style="color: var(--gold-accent);"></i> Statistik Pelayanan
+                        Hari Ini
                     </h5>
                 </div>
                 <div class="card-body bg-white py-4">
@@ -136,6 +137,19 @@
         </div>
     </div>
 
+    <!-- Announcement Bar -->
+    <div class="announcement-bar shadow-lg" id="announcement-container" style="display: none;">
+        <div class="announcement-content">
+            <i class="bi bi-megaphone-fill me-2" style="color: var(--gold-accent);"></i>
+            <span id="announcement-text" style="color: white;">Selamat Datang di Kantor Pajak Wates</span>
+        </div>
+    </div>
+
+    <!-- Fullscreen Toggle Button Overlay -->
+    <div class="fullscreen-overlay" id="fullscreen-btn" onclick="toggleFullscreen()" title="Layar Penuh">
+        <i class="bi bi-arrows-fullscreen"></i>
+    </div>
+
     <!-- Audio Activation Overlay Removed -->
 
     @push('scripts')
@@ -143,6 +157,9 @@
             let lastCalled = {}; // Store last called queue_id per counter
             let lastCalledTime = {}; // Store last called timestamp per counter
             let audioContext = null;
+            let currentAnnouncements = [];
+            let announcementIdx = 0;
+            let announcementInterval = null;
 
             window.activateAudio = function () {
                 console.log("Activating audio...");
@@ -213,6 +230,28 @@
                 }
 
                 const utter = new SpeechSynthesisUtterance(text);
+
+                utter.onend = function () {
+                    console.log("Speech finished, unlocking call...");
+                    fetch('{{ route("counter.unlock-call") }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json'
+                        }
+                    }).catch(e => console.error("Unlock error:", e));
+                };
+
+                utter.onerror = function (event) {
+                    console.error("Speech error, unlocking call...", event);
+                    fetch('{{ route("counter.unlock-call") }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json'
+                        }
+                    }).catch(e => console.error("Unlock error:", e));
+                };
 
                 const getIndoFemaleVoice = () => {
                     const voices = synth.getVoices();
@@ -319,9 +358,73 @@
                                 }
                             });
                         }
+
+                        // Update Announcements
+                        if (data.announcements && data.announcements.length > 0) {
+                            if (JSON.stringify(currentAnnouncements) !== JSON.stringify(data.announcements)) {
+                                currentAnnouncements = data.announcements;
+                                startAnnouncements();
+                            }
+                        } else {
+                            currentAnnouncements = [];
+                            document.getElementById('announcement-container').style.display = 'none';
+                            if (announcementInterval) clearInterval(announcementInterval);
+                        }
                     })
                     .catch(err => console.error('Error fetching status:', err));
             }
+
+            function startAnnouncements() {
+                if (announcementInterval) clearInterval(announcementInterval);
+                const container = document.getElementById('announcement-container');
+                const textEl = document.getElementById('announcement-text');
+
+                if (currentAnnouncements.length === 0) {
+                    container.style.display = 'none';
+                    return;
+                }
+
+                container.style.display = 'flex';
+                announcementIdx = 0;
+
+                const rotate = () => {
+                    // Trigger animation by removing and adding class or changing text with transition
+                    container.classList.remove('animate-up');
+                    void container.offsetWidth; // trigger reflow
+
+                    textEl.innerText = currentAnnouncements[announcementIdx];
+                    container.classList.add('animate-up');
+
+                    announcementIdx = (announcementIdx + 1) % currentAnnouncements.length;
+                };
+
+                rotate();
+                announcementInterval = setInterval(rotate, 10000); // Rotate every 10 seconds (5s show + 5s hide)
+            }
+
+            // Fullscreen Logic
+            window.toggleFullscreen = function () {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(err => {
+                        console.error(`Error enabling full-screen mode: ${err.message}`);
+                    });
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    }
+                }
+            };
+
+            document.addEventListener('fullscreenchange', () => {
+                const btn = document.getElementById('fullscreen-btn');
+                if (document.fullscreenElement) {
+                    btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+                    btn.classList.add('active');
+                } else {
+                    btn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+                    btn.classList.remove('active');
+                }
+            });
 
             // Initialization
             setInterval(updateStatus, 3000);
@@ -350,6 +453,101 @@
                     flex: 0 0 auto;
                     width: 14.2857142857%;
                 }
+            }
+
+            .fullscreen-overlay {
+                position: fixed;
+                bottom: 30px;
+                right: 30px;
+                width: 65px;
+                height: 65px;
+                background-color: rgba(0, 0, 0, 0.4);
+                backdrop-filter: blur(5px);
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 24px;
+                cursor: pointer;
+                z-index: 9999;
+                transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+                box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+                border: 2px solid rgba(255, 255, 255, 0.2);
+            }
+
+            .fullscreen-overlay:hover {
+                background-color: #0d6efd;
+                transform: scale(1.1) translateY(-5px);
+                box-shadow: 0 12px 20px rgba(13, 110, 253, 0.3);
+                border-color: rgba(255, 255, 255, 0.5);
+            }
+
+            .fullscreen-overlay.active {
+                background-color: rgba(220, 53, 69, 0.6);
+            }
+
+            .fullscreen-overlay.active:hover {
+                background-color: #dc3545;
+            }
+
+            /* Announcement Bar styles */
+            .announcement-bar {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 60px;
+                background: linear-gradient(90deg, var(--navy-blue), #000044);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 9998;
+                padding: 0 20px;
+                border-top: 3px solid var(--gold-accent);
+            }
+
+            .announcement-content {
+                font-size: 1.4rem;
+                font-weight: 600;
+                text-align: center;
+            }
+
+            .animate-up {
+                animation: slideUp 10s infinite;
+            }
+
+            @keyframes slideUp {
+                0% {
+                    transform: translateY(100%);
+                    opacity: 0;
+                }
+
+                5% {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+
+                50% {
+                    transform: translateY(0);
+                    opacity: 1;
+                }
+
+                55% {
+                    transform: translateY(-100%);
+                    opacity: 0;
+                }
+
+                100% {
+                    transform: translateY(-100%);
+                    opacity: 0;
+                }
+            }
+
+            /* Adjust main content padding to prevent overlap with announcement bar */
+            body {
+                padding-bottom: 70px;
             }
         </style>
     @endpush

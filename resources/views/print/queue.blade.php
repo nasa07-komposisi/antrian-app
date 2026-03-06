@@ -15,8 +15,8 @@
             font-family: 'Courier New', Courier, monospace;
             width: 58mm;
             margin: 0;
-            /* Adjust padding for EPOS proportional margins */
-            padding: 2mm 4mm 20mm 4mm;
+            /* Adjust padding for EPOS - increased bottom padding to trigger auto-cut at 15cm */
+            padding: 2mm 4mm 120mm 4mm;
             text-align: center;
             font-size: 11pt;
             /* Prevent unwanted overflow */
@@ -43,9 +43,9 @@
         }
 
         .queue-number {
-            font-size: 32pt;
+            font-size: 48pt;
             font-weight: bold;
-            margin: 10px 0;
+            margin: 25px 0 15px 0;
         }
 
         .footer {
@@ -78,14 +78,31 @@
     <div class="footer">
         <div>Terima kasih atas kunjungan Anda</div>
         <div>Silakan tunggu panggilan</div>
-        <div class="timestamp">{{ $queue->created_at->format('d/m/Y H:i:s') }}</div>
+        <div class="timestamp" style="margin-top: 5px;">
+            @php
+                $days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                $months = ['', 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                $date = $queue->created_at;
+                $dayName = $days[$date->dayOfWeek];
+                $monthName = $months[$date->month];
+                $formattedDate = "$dayName, {$date->day} $monthName {$date->year}";
+                $formattedTime = $date->format('H:i');
+            @endphp
+            {{ $formattedDate }} <br>
+            Pukul {{ $formattedTime }} WIB
+        </div>
     </div>
 
     <script>
         window.onload = function () {
             window.print();
+
+            // If the template is opened in a new window/popup (legacy), close it.
+            // If in an iframe, the session will be cleared on next dashboard load.
             setTimeout(function () {
-                window.close();
+                if (window.self === window.top) {
+                    window.close();
+                }
             }, 500);
         };
     </script>

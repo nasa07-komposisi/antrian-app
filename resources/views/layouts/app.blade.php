@@ -12,9 +12,48 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
+        :root {
+            --navy-blue: #000080;
+            --gold-accent: #FFD700;
+        }
+
         body {
             font-family: 'Poppins', sans-serif;
             background-color: #f8f9fa;
+        }
+
+        .bg-dark {
+            background-color: var(--navy-blue) !important;
+        }
+
+        .btn-dark {
+            background-color: var(--navy-blue) !important;
+            border-color: var(--navy-blue) !important;
+        }
+
+        .btn-dark:hover {
+            background-color: #0000cd !important;
+            border-color: #0000cd !important;
+            color: var(--gold-accent) !important;
+        }
+
+        .navbar-dark {
+            border-bottom: 3px solid var(--gold-accent);
+        }
+
+        .navbar-brand {
+            color: var(--gold-accent) !important;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .dropdown-menu-dark {
+            background-color: var(--navy-blue);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+
+        .dropdown-item:hover {
+            background-color: rgba(255, 215, 0, 0.1);
+            color: var(--gold-accent);
         }
 
         .card {
@@ -28,7 +67,7 @@
         }
 
         .gradient-primary {
-            background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+            background: linear-gradient(135deg, var(--navy-blue), #0000cd);
             color: white;
         }
     </style>
@@ -63,9 +102,8 @@
                                     </li>
                                     <li><a class="dropdown-item" href="{{ route('admin.quotas') }}"><i
                                                 class="bi bi-shield-check me-2"></i>Kuota Antrian</a></li>
-                                    <li><a class="dropdown-item" href="{{ route('admin.services') }}">Layanan</a></li>
-                                    <li><a class="dropdown-item" href="{{ route('admin.counters') }}">Loket</a></li>
-                                    <li><a class="dropdown-item" href="{{ route('admin.users') }}">User</a></li>
+                                    <li><a class="dropdown-item" href="{{ route('admin.announcements') }}"><i
+                                                class="bi bi-megaphone me-2"></i>Pengumuman</a></li>
                                 </ul>
                             </li>
                         @endif
@@ -92,7 +130,8 @@
         </div>
     </nav>
 
-    <div class="{{ Request::is('/') || Request::is('admin*') || Request::is('counter*') ? 'container-fluid px-4' : 'container' }}">
+    <div
+        class="{{ Request::is('/') || Request::is('admin*') || Request::is('counter*') ? 'container-fluid px-4' : 'container' }}">
         @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
                 {{ session('success') }}
@@ -156,6 +195,36 @@
                     if (bsAlert) bsAlert.close();
                 });
             }, 2000);
+
+            // Proactive Auto-Logout (Idle Timer)
+            @auth
+                (function () {
+                    let idleTime = 0;
+                    const maxIdle = 20; // minutes
+                    const logoutForm = document.querySelector('form[action="{{ route('logout') }}"]');
+
+                    if (!logoutForm) return;
+
+                    // Increment the idle time counter every minute
+                    const idleInterval = setInterval(timerIncrement, 60000);
+
+                    // Zero the idle timer on mouse movement or keypress
+                    const activityEvents = ['mousedown', 'mousemove', 'keydown', 'scroll', 'touchstart'];
+                    activityEvents.forEach(event => {
+                        window.addEventListener(event, function () {
+                            idleTime = 0;
+                        }, false);
+                    });
+
+                    function timerIncrement() {
+                        idleTime = idleTime + 1;
+                        if (idleTime >= maxIdle) {
+                            console.log("Idle limit reached (20 mins). Triggering logout...");
+                            logoutForm.submit();
+                        }
+                    }
+                })();
+            @endauth
         });
     </script>
 

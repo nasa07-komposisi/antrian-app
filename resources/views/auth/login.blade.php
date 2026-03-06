@@ -27,7 +27,10 @@
                                 required>
                         </div>
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-dark btn-lg">Masuk</button>
+                            <button type="submit" class="btn btn-dark btn-lg w-100 fw-bold"
+                                style="border: 1px solid var(--gold-accent);">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> MASUK
+                            </button>
                         </div>
                     </form>
                 </div>

@@ -10,7 +10,11 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Counter extends Model
 {
-    protected $fillable = ['service_id', 'user_id', 'occupied_by', 'name', 'status'];
+    protected $fillable = ['service_id', 'user_id', 'occupied_by', 'name', 'status', 'last_seen_at'];
+
+    protected $casts = [
+        'last_seen_at' => 'datetime',
+    ];
 
     public function occupiedBy()
     {

@@ -19,6 +19,6 @@ class IsAdmin
             return $next($request);
         }
 
-        return redirect('/')->with('error', 'Anda tidak memiliki akses ke halaman ini.');
+        return redirect()->route('login')->with('error', 'Anda tidak memiliki akses ke halaman ini.');
     }
 }
