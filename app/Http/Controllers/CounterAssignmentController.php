@@ -25,7 +25,7 @@ class CounterAssignmentController extends Controller
 
         // Get counters that are not occupied
         $availableCounters = Counter::whereNull('occupied_by')
-            ->where('status', 'active')
+            ->whereIn('status', ['active', 'offline'])
             ->get();
 
         return view('counter.select', compact('availableCounters'));

@@ -39,7 +39,7 @@ class CleanupSystem extends Command
             $this->line("Releasing abandoned counter: {$counter->name}");
             $counter->update([
                 'occupied_by' => null,
-                'status' => 'active'
+                'status' => 'offline'
             ]);
         }
 
